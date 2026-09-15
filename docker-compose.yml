@@ -1,0 +1,66 @@
+# OpenProject (all-in-one image: built-in PostgreSQL + memcached) behind Traefik.
+#
+# Architecture:
+#   Internet → Nginx (443, TLS/Certbot) → Traefik (127.0.0.1:8080) → OpenProject (internal port 80)
+#
+# Nginx still proxy_passes to http://127.0.0.1:8080 (unchanged compared to the
+# previous setup where OpenProject was exposed directly on 8080).
+#
+# SECRET_KEY_BASE comes from the .env file (never committed to Git).
+# ⚠️ Keep the SAME key as the working installation, otherwise sessions
+# and encrypted data will be invalidated.
+
+services:
+  traefik:
+    image: traefik:v3
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8080:80"                # Web entrypoint — Nginx proxy_pass target (as before)
+      - "127.0.0.1:8081:8080"    # Traefik dashboard — local access only
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  openproject:
+    image: openproject/openproject:17
+    container_name: openproject
+    restart: unless-stopped
+    environment:
+      OPENPROJECT_HOST__NAME: nexus.bestcash.me
+      OPENPROJECT_HTTPS: "true"          # TLS terminated upstream by Nginx
+      SECRET_KEY_BASE: "${SECRET_KEY_BASE}"
+    volumes:
+      - /var/lib/openproject/pgdata:/var/openproject/pgdata
+      - /var/lib/openproject/assets:/var/openproject/assets
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openproject.rule=Host(`nexus.bestcash.me`)"
+      - "traefik.http.routers.openproject.entrypoints=web"
+      - "traefik.http.routers.openproject.middlewares=op-forwarded-proto"
+      - "traefik.http.services.openproject.loadbalancer.server.port=80"
+      # TLS is terminated upstream by Nginx: without this header, OpenProject sees
+      # plain http, redirects to https, and loops (ERR_TOO_MANY_REDIRECTS).
+      - "traefik.http.middlewares.op-forwarded-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik:
+    driver: bridge
