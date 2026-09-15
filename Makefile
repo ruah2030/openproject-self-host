@@ -2,134 +2,134 @@
 
 help:
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║         OpenProject Deployment - Commandes Rapides         ║"
+	@echo "║          OpenProject Deployment - Quick Commands           ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "📦 Installation:"
-	@echo "   make install          - Installation complète (setup.sh)"
+	@echo "   make install          - Full installation (setup.sh)"
 	@echo ""
-	@echo "🚀 Gestion des services:"
-	@echo "   make start            - Démarrer les containers"
-	@echo "   make stop             - Arrêter les containers"
-	@echo "   make restart          - Redémarrer les containers"
-	@echo "   make status           - Voir le statut des services"
-	@echo "   make logs             - Afficher les logs en direct"
-	@echo "   make logs-all         - Logs de tous les containers"
+	@echo "🚀 Service management:"
+	@echo "   make start            - Start the containers"
+	@echo "   make stop             - Stop the containers"
+	@echo "   make restart          - Restart the containers"
+	@echo "   make status           - Show service status"
+	@echo "   make logs             - Follow live logs"
+	@echo "   make logs-all         - Logs of all containers"
 	@echo ""
 	@echo "🐳 Docker:"
-	@echo "   make ps               - Lister les containers"
-	@echo "   make shell-openproject- Shell dans OpenProject"
-	@echo "   make shell-traefik    - Shell dans Traefik"
+	@echo "   make ps               - List containers"
+	@echo "   make shell-openproject- Shell into OpenProject"
+	@echo "   make shell-traefik    - Shell into Traefik"
 	@echo ""
-	@echo "💾 Base de données (PostgreSQL intégré au container):"
-	@echo "   make db               - Accéder à PostgreSQL"
-	@echo "   make backup           - Sauvegarder la base de données"
+	@echo "💾 Database (PostgreSQL built into the container):"
+	@echo "   make db               - Open a PostgreSQL shell"
+	@echo "   make backup           - Back up the database"
 	@echo ""
 	@echo "📊 Information:"
-	@echo "   make info             - Informations du déploiement"
-	@echo "   make version          - Versions installées"
+	@echo "   make info             - Deployment information"
+	@echo "   make version          - Installed versions"
 	@echo ""
 	@echo "🧹 Maintenance:"
-	@echo "   make clean            - Supprimer tous les containers"
+	@echo "   make clean            - Remove all containers"
 	@echo ""
 
 install:
-	@echo "🚀 Lancement de l'installation..."
+	@echo "🚀 Starting installation..."
 	@bash setup.sh
 
 start:
-	@echo "▶️  Démarrage des services..."
+	@echo "▶️  Starting services..."
 	docker-compose up -d
-	@echo "✅ Services démarrés"
+	@echo "✅ Services started"
 	@make status
 
 stop:
-	@echo "⏹️  Arrêt des services..."
+	@echo "⏹️  Stopping services..."
 	docker-compose down
-	@echo "✅ Services arrêtés"
+	@echo "✅ Services stopped"
 
 restart:
-	@echo "🔄 Redémarrage des services..."
+	@echo "🔄 Restarting services..."
 	docker-compose restart
-	@echo "✅ Services redémarrés"
+	@echo "✅ Services restarted"
 	@make status
 
 status:
 	@echo ""
-	@echo "📊 Statut des containers Docker:"
+	@echo "📊 Docker container status:"
 	docker-compose ps
 	@echo ""
-	@echo "📊 Statut de Nginx:"
+	@echo "📊 Nginx status:"
 	@sudo systemctl status nginx --no-pager 2>/dev/null || echo "Nginx status unavailable"
 	@echo ""
 
 logs:
-	@echo "📋 Logs OpenProject (Ctrl+C pour arrêter):"
+	@echo "📋 OpenProject logs (Ctrl+C to stop):"
 	docker-compose logs -f openproject
 
 logs-all:
-	@echo "📋 Logs de tous les containers (Ctrl+C pour arrêter):"
+	@echo "📋 All container logs (Ctrl+C to stop):"
 	docker-compose logs -f
 
 nginx-reload:
-	@echo "🔄 Rechargement de Nginx..."
+	@echo "🔄 Reloading Nginx..."
 	@sudo nginx -t && sudo systemctl reload nginx
-	@echo "✅ Nginx rechargé"
+	@echo "✅ Nginx reloaded"
 
 ps:
-	@echo "🐳 Containers Docker actifs:"
+	@echo "🐳 Running Docker containers:"
 	docker ps
 	@echo ""
-	@echo "Tous les containers:"
+	@echo "All containers:"
 	docker ps -a
 
 shell-openproject:
-	@echo "🐚 Accès au shell OpenProject..."
+	@echo "🐚 Opening OpenProject shell..."
 	docker-compose exec openproject bash
 
 shell-traefik:
-	@echo "🐚 Accès au shell Traefik..."
+	@echo "🐚 Opening Traefik shell..."
 	docker-compose exec traefik sh
 
 db:
-	@echo "💾 Connexion à PostgreSQL (intégré au container OpenProject)..."
+	@echo "💾 Connecting to PostgreSQL (built into the OpenProject container)..."
 	docker-compose exec openproject su postgres -c "psql openproject"
 
 backup:
-	@echo "💾 Sauvegarde de la base de données PostgreSQL..."
+	@echo "💾 Backing up the PostgreSQL database..."
 	@mkdir -p ./backups
 	docker-compose exec -T openproject su postgres -c "pg_dump openproject" > ./backups/openproject_$(shell date +%Y%m%d_%H%M%S).sql
-	@echo "✅ Sauvegarde créée dans ./backups/"
+	@echo "✅ Backup created in ./backups/"
 	@ls -lh ./backups/
 
 clean:
-	@echo "🧹 Suppression de tous les containers..."
+	@echo "🧹 Removing all containers..."
 	docker-compose down -v
-	@echo "✅ Containers supprimés"
-	@echo "⚠️  Les données restent dans /var/lib/openproject (pgdata + assets)"
+	@echo "✅ Containers removed"
+	@echo "⚠️  Data is kept in /var/lib/openproject (pgdata + assets)"
 
 info:
-	@echo "ℹ️  Informations du déploiement:"
+	@echo "ℹ️  Deployment information:"
 	@echo ""
-	@echo "Domaine:         https://nexus.bestcash.me"
-	@echo "Répertoire:      $(shell pwd)"
+	@echo "Domain:          https://nexus.bestcash.me"
+	@echo "Directory:       $(shell pwd)"
 	@echo "Variables:       $(shell pwd)/.env"
-	@echo "BD PostgreSQL:   intégrée au container (données: /var/lib/openproject/pgdata)"
+	@echo "PostgreSQL DB:   built into the container (data: /var/lib/openproject/pgdata)"
 	@echo "Assets:          /var/lib/openproject/assets"
 	@echo "Traefik:         127.0.0.1:8080 (web) / 127.0.0.1:8081 (dashboard)"
 	@echo ""
-	@echo "Fichiers:"
-	@ls -lh docker-compose.yml .env setup.sh Makefile 2>/dev/null || echo "Fichiers manquants"
+	@echo "Files:"
+	@ls -lh docker-compose.yml .env setup.sh Makefile 2>/dev/null || echo "Missing files"
 	@echo ""
 
 version:
-	@echo "🔍 Versions installées:"
+	@echo "🔍 Installed versions:"
 	@docker --version
 	@docker-compose --version
 	@nginx -v 2>&1
 	@echo ""
 	@echo "📊 Services:"
-	@sudo systemctl is-active nginx && echo "✅ Nginx actif" || echo "❌ Nginx inactif"
+	@sudo systemctl is-active nginx && echo "✅ Nginx active" || echo "❌ Nginx inactive"
 	@echo ""
-	@echo "Certificat SSL:"
-	@sudo certbot certificates 2>/dev/null | grep -A 2 "nexus.bestcash.me" || echo "Certificat non trouvé"
+	@echo "SSL certificate:"
+	@sudo certbot certificates 2>/dev/null | grep -A 2 "nexus.bestcash.me" || echo "Certificate not found"
